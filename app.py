@@ -1,6 +1,9 @@
 """Pramaan Lens frontend (Streamlit). Run: streamlit run app.py"""
+import base64
 import html
 import io
+from pathlib import Path
+
 import streamlit as st
 import streamlit.components.v1 as components
 from backend import custody
@@ -8,6 +11,10 @@ from backend.analysis import COLORS, analyze, annotate
 from report_pdf import build_report_pdf
 
 st.set_page_config(page_title="Pramaan Lens", page_icon="🔎", layout="wide")
+
+JUSTICE_GIF = base64.b64encode(
+    (Path(__file__).parent / "assets" / "justice.gif").read_bytes()
+).decode("ascii")
 
 
 def render_styles():
@@ -48,6 +55,8 @@ def render_styles():
     [data-testid="stHeader"] { background: transparent; }
     #MainMenu, footer, [data-testid="stFooter"] { visibility: hidden; }
     .header-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-bottom: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--google-border); }
+    .brand-group { display: flex; align-items: center; gap: 16px; min-width: 0; }
+    .brand-animation { display: block; flex: 0 0 76px; width: 76px; height: 76px; object-fit: contain; }
     .brand-title { margin: 0; color: var(--google-text); font-size: 2.1rem; line-height: 1.2; font-weight: 600; letter-spacing: -.01em; }
     .brand-tagline { margin: 4px 0 0; color: #80868B; font-size: .95rem; line-height: 1.6; font-weight: 400; }
     .local-badge { border: 1px solid #D2E3FC; background: #E8F0FE; color: #1967D2; border-radius: 9999px; padding: 6px 14px; font-size: .8rem; font-weight: 600; white-space: nowrap; box-shadow: var(--google-shadow); }
@@ -86,13 +95,16 @@ def render_styles():
     .analysis-toast * { color: #FFFFFF !important; }
     @keyframes analysis-toast-pop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.85); } 10%, 84% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -52%) scale(.96); visibility: hidden; } }
     @media (max-width: 640px) { .analysis-toast { width: max-content; max-width: calc(100vw - 2rem); } }
+    @media (max-width: 640px) { .brand-animation { flex-basis: 60px; width: 60px; height: 60px; } .brand-group { gap: 12px; } .brand-title { font-size: 1.8rem; } }
     @media (prefers-reduced-motion: reduce) { .analysis-toast { animation-name: analysis-toast-fade; } @keyframes analysis-toast-fade { 0%, 84% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; transform: translate(-50%, -50%); visibility: hidden; } } }
     .stButton > button[kind="primary"] { background: var(--google-blue); border: 1px solid var(--google-blue); border-radius: 9999px; color: #FFFFFF !important; font-weight: 600; box-shadow: var(--google-shadow); transition: all .15s ease; }
     .stButton > button[kind="primary"] *, .stButton > button[kind="primary"]:hover { color: #FFFFFF !important; }
     .stButton > button[kind="primary"]:hover { background: #1765CC; border-color: #1765CC; box-shadow: var(--google-shadow-hover); }
     [data-testid="stDownloadButton"] { display: flex; justify-content: flex-end; }
-    [data-testid="stDownloadButton"] > button { width: auto; min-width: 220px; max-width: 280px; background: var(--google-blue); color: #FFFFFF; font-size: .9rem; font-weight: 600; padding: 10px 22px; border: 1px solid var(--google-blue); border-radius: 9999px; box-shadow: var(--google-shadow); margin-top: 12px; }
-    [data-testid="stDownloadButton"] > button:hover { background: #1765CC; color: #FFFFFF; box-shadow: var(--google-shadow-hover); }
+    [data-testid="stDownloadButton"] > button { width: auto; min-width: 220px; max-width: 280px; background: var(--google-blue); color: #FFFFFF !important; font-size: .9rem; font-weight: 600; padding: 10px 22px; border: 1px solid var(--google-blue); border-radius: 9999px; box-shadow: var(--google-shadow); margin-top: 12px; }
+    [data-testid="stDownloadButton"] > button *,
+    [data-testid="stDownloadButton"] > button:hover { color: #FFFFFF !important; }
+    [data-testid="stDownloadButton"] > button:hover { background: #1765CC; box-shadow: var(--google-shadow-hover); }
     @media (max-width: 640px) {
       .steps-grid { grid-template-columns: 1fr; }
       .local-badge { white-space: normal; }
@@ -388,10 +400,13 @@ def show_animated_inspector():
     </div>""", unsafe_allow_html=True)
     components.html(EMPTY_STATE_HTML, height=640)
 render_styles()
-st.markdown("""<div class="header-bar">
-  <div>
+st.markdown(f"""<div class="header-bar">
+  <div class="brand-group">
+    <img class="brand-animation" src="data:image/gif;base64,{JUSTICE_GIF}" alt="Justice scales animation">
+    <div>
     <h1 class="brand-title">Pramaan Lens</h1>
     <p class="brand-tagline">Forensic screenshot triage, surfaces tampering signals for verification on the source device.</p>
+    </div>
   </div>
   <span class="local-badge">🔒 100% Local · Zero Data Leaves Device</span>
 </div>""", unsafe_allow_html=True)
