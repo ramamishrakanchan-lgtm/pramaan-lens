@@ -2,7 +2,7 @@
 No generative LLM, and no genuine/fake verdict: only HIGH / MEDIUM / LOW risk flags."""
 import io, re, datetime as dt
 import cv2, numpy as np, imagehash
-from PIL import Image, ImageDraw, ExifTags
+from PIL import Image, ImageDraw, ImageFont, ImageColor, ExifTags
 from . import custody
 
 EDITORS = ("photoshop", "gimp", "canva", "snapseed", "picsart", "pixlr", "lightroom", "paint.net", "figma", "fotor")
@@ -167,11 +167,40 @@ def analyze(raw: bytes, filename: str, claimed=None):
                 top=flags[0]["level"] if flags else "LOW")
 
 
+# 6. Annotated image (clear boxes + labels) -----------------------------------
+BOX = {"HIGH": "#E5322D", "MEDIUM": "#F59E0B", "LOW": "#10B981"}
+
+
+def _font(size):
+    for name in ("DejaVuSans-Bold.ttf", "arialbd.ttf", "Arial Bold.ttf"):
+        try:
+            return ImageFont.truetype(name, size)
+        except OSError:
+            continue
+    return ImageFont.load_default()
+
+
 def annotate(img, flags):
-    out = img.convert("RGB")
-    d = ImageDraw.Draw(out)
-    for f in flags:
-        if f["region"]:
-            x, y, w, h = f["region"]
-            d.rectangle([x, y, x + w, y + h], outline=COLORS[f["level"]], width=3)
-    return out
+    base = img.convert("RGBA")
+    scale = max(base.size) / 800
+    lw = max(4, round(4 * scale))
+    fs = max(14, round(16 * scale))
+    font = _font(fs)
+    layer = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    for f in sorted(flags, key=lambda f: RANK[f["level"]]):  # HIGH sabse upar
+        if not f["region"]:
+            continue
+        x, y, w, h = f["region"]
+        rgb = ImageColor.getrgb(BOX[f["level"]])
+        d.rectangle([x, y, x + w, y + h], fill=rgb + (45,), outline=rgb + (255,), width=lw)
+        label = f"{f['level']} - {f['check']}"
+        l, t, r, b = d.textbbox((0, 0), label, font=font)
+        tw, th, pad = r - l, b - t, max(3, fs // 4)
+        ly = y - th - 2 * pad - lw
+        if ly < 0:  # upar jagah nahi hai to box ke neeche
+            ly = min(y + h + lw, max(0, base.height - th - 2 * pad))
+        lx = min(max(0, x), max(0, base.width - tw - 2 * pad))
+        d.rectangle([lx, ly, lx + tw + 2 * pad, ly + th + 2 * pad], fill=rgb + (255,))
+        d.text((lx + pad - l, ly + pad - t), label, font=font, fill=(255, 255, 255, 255))
+    return Image.alpha_composite(base, layer).convert("RGB")
