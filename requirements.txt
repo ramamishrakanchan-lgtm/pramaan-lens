@@ -1,0 +1,7 @@
+streamlit>=1.36
+opencv-python-headless
+Pillow
+pytesseract
+imagehash
+reportlab
+numpy
