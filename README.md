@@ -15,6 +15,6 @@ streamlit run app.py
 | `app.py` | Streamlit frontend |
 | `backend/custody.py` | SHA-256 seal, SQLite custody log, previous-case hashes |
 | `backend/analysis.py` | Metadata, OCR, message order, date logic, edited-region check, reuse detection |
-| `backend/report.py` | PDF report with BSA 2023 s.63 Part A draft |
+| `report_pdf.py` | PDF report with BSA 2023 s.63 Part A draft |
 
 Use synthetic screenshots only. The original device remains the final check.
