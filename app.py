@@ -17,6 +17,33 @@ JUSTICE_GIF = base64.b64encode(
 ).decode("ascii")
 
 
+def _gif_bottom_gap_ratio(path):
+    """Share of the GIF height that is empty (transparent) below the artwork."""
+    try:
+        from PIL import Image, ImageChops, ImageSequence
+        im = Image.open(path)
+        height, lowest = im.height, 0
+        for frame in ImageSequence.Iterator(im):
+            rgba = frame.convert("RGBA")
+            alpha = rgba.getchannel("A")
+            if alpha.getextrema()[0] > 20:   # no transparency: compare with the corner colour
+                diff = ImageChops.difference(rgba, Image.new("RGBA", rgba.size, rgba.getpixel((0, 0))))
+                box = diff.convert("L").point(lambda v: 255 if v > 24 else 0).getbbox()
+            else:
+                box = alpha.point(lambda a: 255 if a > 20 else 0).getbbox()
+            if box:
+                lowest = max(lowest, box[3])
+        return min(0.45, max(0.0, (height - lowest) / height)) if lowest else 0.0
+    except Exception:
+        return 0.0
+
+
+JUSTICE_GAP = _gif_bottom_gap_ratio(Path(__file__).parent / "assets" / "justice.gif")
+from PIL import Image as _Img
+_g = _Img.open(Path(__file__).parent / "assets" / "justice.gif")
+JUSTICE_ASPECT = _g.height / _g.width   # GIF may not be square
+
+
 def render_styles():
     st.markdown("""<style>
     :root {
@@ -54,9 +81,11 @@ def render_styles():
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] { color: var(--google-text); }
     [data-testid="stHeader"] { background: transparent; }
     #MainMenu, footer, [data-testid="stFooter"] { visibility: hidden; }
-    .header-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-bottom: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--google-border); }
-    .brand-group { display: flex; align-items: center; gap: 16px; min-width: 0; }
-    .brand-animation { display: block; flex: 0 0 76px; width: 76px; height: 76px; object-fit: contain; }
+    .header-bar { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: nowrap; gap: 12px 20px; padding-bottom: 0; margin-bottom: 24px; border-bottom: 1px solid var(--google-border); }
+    .brand-group { display: flex; align-items: flex-end; gap: 20px; min-width: 0; }
+    .brand-text { padding-bottom: 18px; min-width: 0; }
+    .local-badge { margin-bottom: 20px; flex: 0 0 auto; }
+    .brand-animation { display: block; flex: 0 0 140px; width: 140px; height: 140px; object-fit: contain; }
     .brand-title { margin: 0; color: var(--google-text); font-size: 2.1rem; line-height: 1.2; font-weight: 600; letter-spacing: -.01em; }
     .brand-tagline { margin: 4px 0 0; color: #80868B; font-size: .95rem; line-height: 1.6; font-weight: 400; }
     .local-badge { border: 1px solid #D2E3FC; background: #E8F0FE; color: #1967D2; border-radius: 9999px; padding: 6px 14px; font-size: .8rem; font-weight: 600; white-space: nowrap; box-shadow: var(--google-shadow); }
@@ -95,7 +124,7 @@ def render_styles():
     .analysis-toast * { color: #FFFFFF !important; }
     @keyframes analysis-toast-pop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.85); } 10%, 84% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -52%) scale(.96); visibility: hidden; } }
     @media (max-width: 640px) { .analysis-toast { width: max-content; max-width: calc(100vw - 2rem); } }
-    @media (max-width: 640px) { .brand-animation { flex-basis: 60px; width: 60px; height: 60px; } .brand-group { gap: 12px; } .brand-title { font-size: 1.8rem; } }
+    @media (max-width: 640px) { .brand-animation { flex-basis: 100px; width: 100px; height: 100px; } .brand-group { gap: 12px; } .brand-title { font-size: 1.8rem; } .header-bar { flex-wrap: wrap; } .local-badge { order: -1; margin-bottom: 8px; } }
     @media (prefers-reduced-motion: reduce) { .analysis-toast { animation-name: analysis-toast-fade; } @keyframes analysis-toast-fade { 0%, 84% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; transform: translate(-50%, -50%); visibility: hidden; } } }
     .stButton > button[kind="primary"] { background: var(--google-blue); border: 1px solid var(--google-blue); border-radius: 9999px; color: #FFFFFF !important; font-weight: 600; box-shadow: var(--google-shadow); transition: all .15s ease; }
     .stButton > button[kind="primary"] *, .stButton > button[kind="primary"]:hover { color: #FFFFFF !important; }
@@ -195,10 +224,14 @@ def show_animated_inspector():
     </div>""", unsafe_allow_html=True)
     components.html(EMPTY_STATE_HTML, height=680)
 render_styles()
-st.markdown(f"""<div class="header-bar">
+st.markdown(f"""<style>
+.brand-animation {{ height: {140 * JUSTICE_ASPECT * (1 - JUSTICE_GAP):.1f}px !important; object-fit: cover !important; object-position: center top; }}
+@media (max-width: 640px) {{ .brand-animation {{ height: {100 * JUSTICE_ASPECT * (1 - JUSTICE_GAP):.1f}px !important; }} }}
+</style>
+<div class="header-bar">
   <div class="brand-group">
     <img class="brand-animation" src="data:image/gif;base64,{JUSTICE_GIF}" alt="Justice scales animation">
-    <div>
+    <div class="brand-text">
     <h1 class="brand-title">Pramaan Lens</h1>
     <p class="brand-tagline">Forensic screenshot triage, surfaces tampering signals for verification on the source device.</p>
     </div>
