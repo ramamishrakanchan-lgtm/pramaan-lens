@@ -135,14 +135,14 @@ html,body{margin:0;height:100%;background:transparent;font-family:-apple-system,
 .illustration{flex:0 1 1000px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px}
 #girl{width:100%;aspect-ratio:720/500;display:block}
 #girl svg path[fill="rgb(255,255,255)"],#girl svg path[fill="#ffffff"]{fill:#c8d5ce}
-.investigating{flex:0 0 clamp(110px,17vw,165px);display:flex;flex-direction:column;align-items:center;gap:12px;color:#526d62;font-size:clamp(.9rem,1.3vw,1.05rem);font-weight:650;letter-spacing:.02em}
-.wave-loader{display:flex;align-items:center;justify-content:center;gap:7px;height:38px}
-.wave-loader span{width:9px;height:9px;border-radius:50%;background:#5d8978;animation:wave-bob 1s ease-in-out infinite}
+.investigating{flex:0 0 clamp(150px,22vw,230px);display:flex;flex-direction:column;align-items:center;gap:16px;color:#526d62;font-size:clamp(1.1rem,1.7vw,1.4rem);opacity:0;font-weight:650;letter-spacing:.02em}
+.wave-loader{display:flex;align-items:center;justify-content:center;gap:10px;height:56px}
+.wave-loader span{width:14px;height:14px;border-radius:50%;background:#5d8978;animation:wave-bob 1s ease-in-out infinite}
 .wave-loader span:nth-child(2){animation-delay:.12s;background:#789b8b}
 .wave-loader span:nth-child(3){animation-delay:.24s;background:#9bb8aa}
 .wave-loader span:nth-child(4){animation-delay:.36s;background:#789b8b}
 .wave-loader span:nth-child(5){animation-delay:.48s;background:#5d8978}
-@keyframes wave-bob{0%,100%{transform:translateY(7px)}50%{transform:translateY(-7px)}}
+@keyframes wave-bob{0%,100%{transform:translateY(10px)}50%{transform:translateY(-10px)}}
 .txt{color:#5F6368;font-size:1.05rem;font-weight:500;letter-spacing:.2px}
 @media(max-width:640px){.content-row{flex-direction:column;gap:4px}.investigating{flex-basis:auto;gap:5px}.wave-loader{height:28px}.illustration{width:min(100%,520px);flex-basis:auto}}
 @media(prefers-reduced-motion:reduce){.wave-loader span{animation:none;transform:none}}
@@ -173,7 +173,11 @@ const anim = lottie.loadAnimation({
   autoplay: !reduce,
   animationData: __GIRL_JSON__
 });
-if (reduce) anim.goToAndStop(90, true);   // still frame for reduced-motion users
+anim.setSpeed(0.5);   // half speed = one round takes 2x longer
+const inv = document.querySelector(".investigating");
+// "Investigating..." fades in together with the woman (first ~30 frames of every loop)
+anim.addEventListener("enterFrame", e => { inv.style.opacity = Math.min(1, e.currentTime / 30); });
+if (reduce) { anim.goToAndStop(90, true); inv.style.opacity = 1; }   // still frame for reduced-motion users
 </script>
 """.replace("__LOTTIE_JS__", LOTTIE_JS).replace("__GIRL_JSON__", GIRL_JSON)
 
