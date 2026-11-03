@@ -227,6 +227,7 @@ render_styles()
 st.markdown(f"""<style>
 .brand-animation {{ height: {140 * JUSTICE_ASPECT * (1 - JUSTICE_GAP):.1f}px !important; object-fit: cover !important; object-position: center top; margin-bottom: 23px; }}
 @media (max-width: 640px) {{ .brand-animation {{ height: {100 * JUSTICE_ASPECT * (1 - JUSTICE_GAP):.1f}px !important; }} }}
+@media (max-width: 640px) {{ .brand-title {{ font-size: 1.5rem !important; }} .brand-tagline {{ font-size: .8rem !important; }} .brand-text {{ padding-bottom: 12px !important; }} .brand-animation {{ flex-basis: 84px !important; width: 84px !important; height: {84 * JUSTICE_ASPECT * (1 - JUSTICE_GAP):.1f}px !important; margin-bottom: 14px; }} }}
 </style>
 <div class="header-bar">
   <div class="brand-group">
