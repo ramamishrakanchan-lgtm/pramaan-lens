@@ -130,10 +130,11 @@ EMPTY_STATE_HTML = r"""
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:transparent;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
 .card{position:relative;height:100%;overflow:visible;background:transparent}
-.stage{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px 12px}
-.content-row{display:flex;align-items:center;justify-content:center;gap:clamp(12px,2.5vw,30px);width:100%;max-width:1250px}
-.illustration{flex:0 1 860px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px}
-#girl{width:100%;aspect-ratio:840/600;display:block}
+.stage{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding:0 12px}
+.content-row{display:flex;align-items:center;justify-content:center;gap:clamp(12px,2.5vw,30px);width:100%;max-width:1450px}
+.illustration{flex:0 1 1000px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+#girl{width:100%;aspect-ratio:720/500;display:block}
+#girl svg path[fill="rgb(255,255,255)"],#girl svg path[fill="#ffffff"]{fill:#c8d5ce}
 .investigating{flex:0 0 clamp(110px,17vw,165px);display:flex;flex-direction:column;align-items:center;gap:12px;color:#526d62;font-size:clamp(.9rem,1.3vw,1.05rem);font-weight:650;letter-spacing:.02em}
 .wave-loader{display:flex;align-items:center;justify-content:center;gap:7px;height:38px}
 .wave-loader span{width:9px;height:9px;border-radius:50%;background:#5d8978;animation:wave-bob 1s ease-in-out infinite}
@@ -156,7 +157,6 @@ html,body{margin:0;height:100%;background:transparent;font-family:-apple-system,
    </div>
    <div class="illustration">
     <div id="girl" role="img" aria-label="A woman at a desk searching with a magnifying glass, no results found"></div>
-    <div class="txt" id="txt">No results</div>
    </div>
   </div>
  </div>
@@ -168,6 +168,7 @@ const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const anim = lottie.loadAnimation({
   container: document.getElementById("girl"),
   renderer: "svg",
+  rendererSettings: { viewBoxSize: "60 50 720 500" },   // crop empty margin so the woman fills the frame
   loop: !reduce,
   autoplay: !reduce,
   animationData: __GIRL_JSON__
@@ -188,7 +189,7 @@ def show_animated_inspector():
         <div class="step-card"><div class="step-label">STEP 2</div><div class="step-text">Click Seal and analyse</div></div>
         <div class="step-card"><div class="step-label">STEP 3</div><div class="step-text">Verify flags on original device</div></div>
     </div>""", unsafe_allow_html=True)
-    components.html(EMPTY_STATE_HTML, height=720)
+    components.html(EMPTY_STATE_HTML, height=680)
 render_styles()
 st.markdown(f"""<div class="header-bar">
   <div class="brand-group">
