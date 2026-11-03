@@ -225,7 +225,7 @@ def show_animated_inspector():
     components.html(EMPTY_STATE_HTML, height=680)
 render_styles()
 st.markdown(f"""<style>
-.brand-animation {{ height: {140 * JUSTICE_ASPECT * (1 - JUSTICE_GAP):.1f}px !important; object-fit: cover !important; object-position: center top; }}
+.brand-animation {{ height: {140 * JUSTICE_ASPECT * (1 - JUSTICE_GAP):.1f}px !important; object-fit: cover !important; object-position: center top; margin-bottom: 23px; }}
 @media (max-width: 640px) {{ .brand-animation {{ height: {100 * JUSTICE_ASPECT * (1 - JUSTICE_GAP):.1f}px !important; }} }}
 </style>
 <div class="header-bar">
