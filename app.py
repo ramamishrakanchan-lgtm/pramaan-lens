@@ -117,9 +117,14 @@ def render_styles():
 
 
 # ---------------------------------------------------------------------------
-# Animated empty state: full-page background at 70% opacity. The illustration
-# starts as a faint grey outline and is revealed in colour by a scanning lens.
+# Animated empty state: the "No results" woman (Lottie, drawer_search_empty)
+# plays on loop at 70% opacity. Lottie player + animation JSON are both loaded
+# from ./assets and inlined, so nothing is fetched from the internet.
 # ---------------------------------------------------------------------------
+ASSETS = Path(__file__).parent / "assets"
+LOTTIE_JS = (ASSETS / "lottie_light.min.js").read_text(encoding="utf-8").replace("</script", "<\\/script")
+GIRL_JSON = (ASSETS / "search_empty_girl.json").read_text(encoding="utf-8").replace("</script", "<\\/script")
+
 EMPTY_STATE_HTML = r"""
 <style>
 *{box-sizing:border-box}
@@ -127,8 +132,8 @@ html,body{margin:0;height:100%;background:transparent;font-family:-apple-system,
 .card{position:relative;height:100%;overflow:visible;background:transparent}
 .stage{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px 12px}
 .content-row{display:flex;align-items:center;justify-content:center;gap:clamp(12px,2.5vw,30px);width:100%;max-width:1000px}
-.illustration{flex:0 1 700px;min-width:0}
-svg.scene{width:100%;height:auto;aspect-ratio:400/340;display:block;overflow:visible}
+.illustration{flex:0 1 640px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+#girl{width:100%;aspect-ratio:840/600;display:block;background:#cfdcd5;border-radius:24px}
 .investigating{flex:0 0 clamp(110px,17vw,165px);display:flex;flex-direction:column;align-items:center;gap:12px;color:#526d62;font-size:clamp(.9rem,1.3vw,1.05rem);font-weight:650;letter-spacing:.02em}
 .wave-loader{display:flex;align-items:center;justify-content:center;gap:7px;height:38px}
 .wave-loader span{width:9px;height:9px;border-radius:50%;background:#5d8978;animation:wave-bob 1s ease-in-out infinite}
@@ -137,10 +142,7 @@ svg.scene{width:100%;height:auto;aspect-ratio:400/340;display:block;overflow:vis
 .wave-loader span:nth-child(4){animation-delay:.36s;background:#789b8b}
 .wave-loader span:nth-child(5){animation-delay:.48s;background:#5d8978}
 @keyframes wave-bob{0%,100%{transform:translateY(7px)}50%{transform:translateY(-7px)}}
-.txt{color:#e9f2ec;font-size:1.05rem;font-weight:500;letter-spacing:.2px;opacity:0}
-.steam{animation:steam 2.8s ease-in-out infinite}
-.steam.b{animation-delay:1.3s}
-@keyframes steam{0%{opacity:0;transform:translateY(5px)}40%{opacity:.9}100%{opacity:0;transform:translateY(-12px)}}
+.txt{color:#5F6368;font-size:1.05rem;font-weight:500;letter-spacing:.2px}
 @media(max-width:640px){.content-row{flex-direction:column;gap:4px}.investigating{flex-basis:auto;gap:5px}.wave-loader{height:28px}.illustration{width:min(100%,520px);flex-basis:auto}}
 @media(prefers-reduced-motion:reduce){.wave-loader span{animation:none;transform:none}}
 </style>
@@ -153,241 +155,29 @@ svg.scene{width:100%;height:auto;aspect-ratio:400/340;display:block;overflow:vis
     <span>Investigating...</span>
    </div>
    <div class="illustration">
-    <svg class="scene" viewBox="0 0 400 340" role="img" aria-label="A woman at a desk searching with a magnifying glass, no results found">
-
-   <!-- floor shadow -->
-   <ellipse cx="225" cy="308" rx="160" ry="8" fill="#0d2418" opacity=".25"/>
-
-   <!-- 1. PLANT + POT (gamla) -->
-   <g id="gPlant">
-     <path d="M56 262Q60 232 70 196" stroke="#a9c5b6" stroke-width="2" fill="none"/>
-     <ellipse cx="44" cy="232" rx="8" ry="22" transform="rotate(-35 44 232)" fill="#b9d2c4"/>
-     <ellipse cx="72" cy="218" rx="7" ry="19" transform="rotate(28 72 218)" fill="#b9d2c4"/>
-     <ellipse cx="58" cy="246" rx="6" ry="15" transform="rotate(-60 58 246)" fill="#cfe2d6"/>
-     <ellipse cx="68" cy="238" rx="5" ry="13" transform="rotate(50 68 238)" fill="#a3beb0"/>
-     <path d="M40 262h34q9 22-3 42H43q-12-20-3-42Z" fill="#a8c1b3"/>
-     <rect x="38" y="258" width="38" height="8" rx="3" fill="#bcd3c6"/>
-   </g>
-
-   <!-- 2. QUESTION BUBBLE -->
-   <g id="gBubble">
-     <circle cx="118" cy="92" r="27" fill="#a5bfb1"/>
-     <path d="M134 112l14 12-24-6Z" fill="#a5bfb1"/>
-     <text x="118" y="104" text-anchor="middle" fill="#2b4a3f" font-size="34" font-weight="700" font-family="sans-serif">?</text>
-   </g>
-
-   <!-- 3. LADY (body, legs, head) -->
-   <g id="gLady">
-     <!-- chair, behind her seated pose -->
-     <path d="M263 163Q263 159 268 159H280Q285 159 285 164V235H263Z" fill="#789487"/>
-     <path d="M269 169V226M279 169V226" stroke="#9bb2a5" stroke-width="2" stroke-linecap="round"/>
-     <path d="M195 234Q195 230 201 230H277Q283 230 283 236V243H195Z" fill="#52796b"/>
-     <path d="M198 242L194 297M281 242L288 296" stroke="#3f5e52" stroke-width="4" stroke-linecap="round"/>
-     <path d="M190 298H199M285 297H293" stroke="#3f5e52" stroke-width="3" stroke-linecap="round"/>
-     <!-- far leg: thigh rests across the seat, knee bends into a vertical shin -->
-     <path d="M232 238Q242 236 251 241L257 247Q260 252 255 256Q250 260 244 256L229 253Q224 251 225 246Q226 241 232 238Z" fill="#647f73"/>
-     <path d="M229 249Q235 249 239 254L239 291Q238 297 232 298Q226 298 225 292L225 258Q225 252 229 249Z" fill="#647f73"/>
-     <path d="M226 253Q232 250 238 254" stroke="#91aa9e" stroke-width="2" fill="none" stroke-linecap="round"/>
-     <path d="M226 289Q232 292 239 289L240 296Q247 298 251 302Q254 306 249 308H230Q224 307 223 302Z" fill="#34483f"/>
-     <path d="M228 295Q234 298 240 295" stroke="#91aa9e" stroke-width="2" fill="none" stroke-linecap="round"/>
-     <!-- near leg: horizontal thigh, visible knee, straight lower leg and flat shoe -->
-     <path d="M210 238Q220 236 229 241L235 247Q238 252 233 257Q228 261 222 257L207 254Q202 252 203 247Q204 241 210 238Z" fill="#789487"/>
-     <path d="M207 249Q213 249 217 254L217 291Q216 297 210 298Q204 298 203 292L203 258Q203 252 207 249Z" fill="#789487"/>
-     <path d="M204 253Q210 250 216 254" stroke="#a3b9ad" stroke-width="2" fill="none" stroke-linecap="round"/>
-     <path d="M204 289Q210 292 217 289L218 296Q225 298 229 302Q232 306 227 308H208Q202 307 201 302Z" fill="#34483f"/>
-     <path d="M206 295Q212 298 218 295" stroke="#91aa9e" stroke-width="2" fill="none" stroke-linecap="round"/>
-     <g transform="rotate(-5 237 244)">
-       <!-- blouse and jacket, leaning slightly toward the document -->
-       <path d="M207 244L209 157Q211 139 226 134L248 134Q263 139 265 157L267 244Q239 252 207 244Z" fill="#42685c"/>
-       <path d="M229 135L237 157L245 135L252 145L246 166L237 158L228 166L222 145Z" fill="#f3e8d8"/>
-       <path d="M228 166L237 158L246 166L251 195L237 203L223 195Z" fill="#f3e8d8"/>
-       <path d="M208 161Q211 143 225 138L230 160L222 193L209 190Z" fill="#52796b"/>
-       <path d="M264 161Q261 143 249 138L244 160L252 193L265 190Z" fill="#52796b"/>
-       <path d="M237 204L237 240M216 207L219 237M258 207L255 237" stroke="#365b50" stroke-width="2" fill="none" opacity=".7"/>
-       <circle cx="237" cy="215" r="2" fill="#e8b66f"/>
-       <circle cx="237" cy="228" r="2" fill="#e8b66f"/>
-       <rect x="230" y="116" width="14" height="20" rx="6" fill="#e8b99a"/>
-       <!-- head -->
-       <g id="head" transform="translate(236 101) scale(1.12)">
-       <!-- hair silhouette and bun -->
-       <path d="M-19 2Q-23 -22 -10 -29Q2 -37 15 -28Q23 -20 19 8L17 23Q11 16 11 4L-12 4Q-12 18-18 24Z" fill="#a94f31"/>
-       <circle cx="12" cy="-28" r="9" fill="#bf6039"/>
-       <!-- face -->
-       <path d="M-14 -1Q-14 -20 0 -20Q14 -20 14 -1Q14 14 0 22Q-14 14 -14 -1Z" fill="#f1c9aa"/>
-       <!-- side-swept fringe -->
-       <path d="M-17 0Q-20 -25 -2 -27Q14 -29 19 -12Q10 -15 4 -10Q-4 -4 -17 0Z" fill="#bf6039"/>
-       <path d="M-14 -15Q-8 -25 1 -25" stroke="#d77a4a" stroke-width="2" fill="none" stroke-linecap="round"/>
-       <!-- eyes, brows and expression -->
-       <path d="M-11 -5Q-7 -7 -3 -5M3 -5Q7 -7 11 -5" stroke="#713e31" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-       <ellipse cx="-7" cy="1" rx="3.5" ry="2.5" fill="#fff"/>
-       <ellipse cx="7" cy="1" rx="3.5" ry="2.5" fill="#fff"/>
-       <circle id="pupL" cx="-7" cy="1" r="1.8" fill="#315c53"/>
-       <circle id="pupR" cx="7" cy="1" r="1.8" fill="#315c53"/>
-       <path d="M0 5Q-2 9 1 10M-3 15Q0 17 3 15" stroke="#a75f4d" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-       <ellipse cx="-9" cy="10" rx="3" ry="1.7" fill="#d98972" opacity=".42"/>
-       <ellipse cx="9" cy="10" rx="3" ry="1.7" fill="#d98972" opacity=".42"/>
-       </g>
-     </g>
-   </g>
-
-   <!-- 4. DESK -->
-   <g id="gDesk">
-     <rect x="92" y="190" width="292" height="9" rx="3" fill="#b9d0c3"/>
-     <rect x="92" y="199" width="292" height="3" fill="#9db8aa"/>
-     <rect x="104" y="202" width="7" height="98" fill="#a8c1b3"/>
-     <rect x="364" y="202" width="7" height="98" fill="#a8c1b3"/>
-   </g>
-
-   <!-- 5. DOCUMENT on the desk -->
-   <g id="gDocument">
-     <rect x="173" y="170" width="62" height="18" rx="2" fill="#f4f8f5" stroke="#789487" stroke-width="1.5"/>
-     <path d="M180 175H227M180 179H221M180 183H214" stroke="#9bb2a5" stroke-width="1.3" stroke-linecap="round"/>
-   </g>
-
-   <!-- 6. BOOKS -->
-   <g id="gBooks">
-     <rect x="116" y="180" width="54" height="10" rx="2" fill="#a8c1b3"/>
-     <rect x="120" y="170" width="48" height="10" rx="2" fill="#cfe0d6"/>
-     <rect x="115" y="160" width="54" height="10" rx="2" fill="#8fb0a0"/>
-   </g>
-
-   <!-- 6. CUP -->
-   <g id="gCup">
-     <ellipse cx="338" cy="189" rx="17" ry="3.5" fill="#dfe9e4"/>
-     <path d="M328 170h20v10q0 9-10 9t-10-9Z" fill="#f4f8f5"/>
-     <path d="M348 173h4q3 0 3 4t-3 4h-4" fill="none" stroke="#f4f8f5" stroke-width="2"/>
-     <path class="steam" d="M334 165q-5-8 0-16" stroke="#cfe0d6" stroke-width="2" fill="none" stroke-linecap="round"/>
-     <path class="steam b" d="M343 165q-5-8 0-16" stroke="#cfe0d6" stroke-width="2" fill="none" stroke-linecap="round"/>
-   </g>
-
-   <!-- 7. ARMS + MAGNIFIER -->
-   <g id="gArms">
-     <path id="armL" stroke="#ecd6c6" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-     <g id="handL" fill="#ecd6c6" stroke="#ecd6c6" stroke-linecap="round" stroke-linejoin="round">
-       <path d="M5-3Q2-6-2-4L-9-3Q-12-2-10 0L-5 1L-10 1Q-13 2-10 4L-4 4L-8 5Q-10 7-7 8L1 6Q5 5 7 2Z" stroke-width="1"/>
-       <path d="M-7-2L-2-2M-8 2L-3 2M-6 5L-1 4" fill="none" stroke-width="1.6"/>
-     </g>
-     <path id="armR" stroke="#ecd6c6" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-     <g id="lens" transform="scale(1 0.35)">
-       <line x1="24" y1="-24" x2="40" y2="-40" stroke="#2d4a40" stroke-width="2" stroke-linecap="round"/>
-       <circle r="15" fill="rgba(255,255,255,.28)" stroke="#2d4a40" stroke-width="2"/>
-       <path d="M-22 -8A24 24 0 0 1 2 -32" stroke="#fff" stroke-width="2.2" stroke-linecap="round" fill="none" opacity=".9"/>
-     </g>
-     <circle id="handR" r="5" fill="#ecd6c6"/>
-   </g>
-    </svg>
-
+    <div id="girl" role="img" aria-label="A woman at a desk searching with a magnifying glass, no results found"></div>
     <div class="txt" id="txt">No results</div>
    </div>
   </div>
  </div>
 </div>
 
+<script>__LOTTIE_JS__</script>
 <script>
-// ---------- helpers & all variables declared up-front ----------
-const $ = id => document.getElementById(id);
-const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
-const easeOut = x => { x = clamp(x,0,1); return 1 - Math.pow(1-x,3); };
-const easeBack = x => { x = clamp(x,0,1); const c1 = 1.70158, c3 = c1 + 1; return 1 + c3*Math.pow(x-1,3) + c1*Math.pow(x-1,2); };
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-const L1 = 40, L2 = 40;          // upper arm / forearm length
-const HOLD = 3600, FADE = 450;   // pause after last item | fade-out before replay
-
-// serial reveal order: at = start (ms), dur = duration (ms)
-const SEQ = [
-  {id:"gPlant",  at:150,  dur:520, kind:"grow", origin:"50% 100%"},  // 1. gamla
-  {id:"gBubble", at:560,  dur:480, kind:"pop",  origin:"50% 50%"},   // 2. question
-  {id:"gDesk",   at:950,  dur:420, kind:"rise"},                     // 3. desk
-  {id:"gBooks",  at:1150, dur:380, kind:"rise"},
-  {id:"gCup",    at:1300, dur:380, kind:"rise"},
-  {id:"gDocument", at:1450, dur:380, kind:"rise"},
-  {id:"gLady",   at:1550, dur:520, kind:"rise"},                     // 4. lady
-  {id:"gArms",   at:2050, dur:480, kind:"rise"},                     // 5. hand + lens
-  {id:"txt",     at:2550, dur:450, kind:"rise"}                      // 6. No results
-];
-const END = Math.max(...SEQ.map(s => s.at + s.dur));
-
-const els = {};
-SEQ.forEach(s => {
-  const e = $(s.id);
-  els[s.id] = e;
-  if (e && s.origin) { e.style.transformBox = "fill-box"; e.style.transformOrigin = s.origin; }
-  if (e) e.style.opacity = 0;
+const anim = lottie.loadAnimation({
+  container: document.getElementById("girl"),
+  renderer: "svg",
+  loop: !reduce,
+  autoplay: !reduce,
+  animationData: __GIRL_JSON__
 });
-
-const content = $("content");
-const pupL = $("pupL"), pupR = $("pupR");
-const armL = $("armL"), armR = $("armR"), handL = $("handL"), handR = $("handR"), lens = $("lens");
-
-function reveal(s, t){
-  const e = els[s.id]; if (!e) return;
-  const p = clamp((t - s.at) / s.dur, 0, 1);
-  e.style.opacity = clamp(p * 1.8, 0, 1);
-  if (s.kind === "grow") e.style.transform = `scale(${0.6 + 0.4*easeOut(p)}, ${0.05 + 0.95*easeOut(p)})`;
-  else if (s.kind === "pop") e.style.transform = `scale(${0.3 + 0.7*easeBack(p)})`;
-  else e.style.transform = `translateY(${(1 - easeOut(p)) * 16}px)`;
-}
-
-// two-bone inverse kinematics: shoulder -> elbow -> wrist
-function ik(sx,sy,hx,hy,side){
-  let dx = hx - sx, dy = hy - sy, d = Math.hypot(dx,dy);
-  const maxd = L1 + L2 - .5;
-  if (d > maxd){ hx = sx + dx*maxd/d; hy = sy + dy*maxd/d; dx = hx - sx; dy = hy - sy; d = maxd; }
-  d = Math.max(d,10);
-  const a = (L1*L1 - L2*L2 + d*d) / (2*d), h = Math.sqrt(Math.max(0, L1*L1 - a*a));
-  const ux = dx/d, uy = dy/d, mx = sx + ux*a, my = sy + uy*a;
-  const e1 = [mx - uy*h, my + ux*h], e2 = [mx + uy*h, my - ux*h];
-  const sc = e => side*e[0] + .8*e[1];
-  const e = sc(e1) >= sc(e2) ? e1 : e2;
-  return {ex:e[0], ey:e[1], hx:hx, hy:hy};
-}
-
-function drawArms(now){
-  // Keep the lens level while it scans from left to right and back.
-  let px = 200 + Math.sin(now/900)*16;
-  let py = 177;
-  const off = [24, -8.4];
-
-  const r = ik(254, 154, px + off[0], py + off[1], 1);
-  px = r.hx - off[0]; py = r.hy - off[1];
-  armR.setAttribute("d", `M254 154L${r.ex} ${r.ey}L${r.hx} ${r.hy}`);
-  handR.setAttribute("cx", r.hx); handR.setAttribute("cy", r.hy);
-  lens.setAttribute("transform", `translate(${px} ${py}) scale(1 0.35)`);
-
-  // Left palm stays on the document while the elbow remains bent.
-  const l = ik(218, 154, 198, 184, -1);
-  armL.setAttribute("d", `M218 154L${l.ex} ${l.ey}L${l.hx} ${l.hy}`);
-  handL.setAttribute("transform", `translate(${l.hx} ${l.hy})`);
-
-  // eyes follow the lens
-  const ex = clamp((px - 236)/40, -1.8, 1.8), ey = clamp((py - 100)/50, -.6, 1.2);
-  pupL.setAttribute("cx", -7 + ex); pupL.setAttribute("cy", 2 + ey);
-  pupR.setAttribute("cx", 7 + ex);  pupR.setAttribute("cy", 2 + ey);
-}
-
-if (reduce){
-  SEQ.forEach(s => reveal(s, END + 1));
-  drawArms(0);
-} else {
-  let start = performance.now();
-  function frame(now){
-    const el = now - start;
-    SEQ.forEach(s => reveal(s, el));
-    drawArms(now);
-    const out = el > END + HOLD ? clamp(1 - (el - END - HOLD)/FADE, 0, 1) : 1;
-    content.style.opacity = out;
-    if (el > END + HOLD + FADE){
-      start = now;
-      SEQ.forEach(s => { const e = els[s.id]; if (e) e.style.opacity = 0; });
-      content.style.opacity = 1;
-    }
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-}
+if (reduce) anim.goToAndStop(90, true);   // still frame for reduced-motion users
 </script>
-"""
+""".replace("__LOTTIE_JS__", LOTTIE_JS).replace("__GIRL_JSON__", GIRL_JSON)
+
+
+
 def show_animated_inspector():
     # Illustration sits in the empty space BELOW the step cards, at 70% opacity.
     st.markdown("""<style>
