@@ -131,9 +131,9 @@ EMPTY_STATE_HTML = r"""
 html,body{margin:0;height:100%;background:transparent;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
 .card{position:relative;height:100%;overflow:visible;background:transparent}
 .stage{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px 12px}
-.content-row{display:flex;align-items:center;justify-content:center;gap:clamp(12px,2.5vw,30px);width:100%;max-width:1000px}
-.illustration{flex:0 1 640px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px}
-#girl{width:100%;aspect-ratio:840/600;display:block;background:#cfdcd5;border-radius:24px}
+.content-row{display:flex;align-items:center;justify-content:center;gap:clamp(12px,2.5vw,30px);width:100%;max-width:1250px}
+.illustration{flex:0 1 860px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+#girl{width:100%;aspect-ratio:840/600;display:block}
 .investigating{flex:0 0 clamp(110px,17vw,165px);display:flex;flex-direction:column;align-items:center;gap:12px;color:#526d62;font-size:clamp(.9rem,1.3vw,1.05rem);font-weight:650;letter-spacing:.02em}
 .wave-loader{display:flex;align-items:center;justify-content:center;gap:7px;height:38px}
 .wave-loader span{width:9px;height:9px;border-radius:50%;background:#5d8978;animation:wave-bob 1s ease-in-out infinite}
@@ -188,7 +188,7 @@ def show_animated_inspector():
         <div class="step-card"><div class="step-label">STEP 2</div><div class="step-text">Click Seal and analyse</div></div>
         <div class="step-card"><div class="step-label">STEP 3</div><div class="step-text">Verify flags on original device</div></div>
     </div>""", unsafe_allow_html=True)
-    components.html(EMPTY_STATE_HTML, height=640)
+    components.html(EMPTY_STATE_HTML, height=720)
 render_styles()
 st.markdown(f"""<div class="header-bar">
   <div class="brand-group">
