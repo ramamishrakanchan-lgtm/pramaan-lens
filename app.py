@@ -7,10 +7,13 @@ from pathlib import Path
 
 import streamlit as st
 import streamlit.components.v1 as components
+from PIL import Image, ImageChops, ImageSequence
 from backend import custody
 from backend.analysis import COLORS, analyze, annotate
 from backend.ml_model import predict_risk
 from backend.report_pdf import build_report_pdf
+
+ASSETS = Path(__file__).parent / "assets"
 
 st.set_page_config(page_title="Pramaan Lens", page_icon="🔎", layout="wide")
 
@@ -22,24 +25,21 @@ SAMPLE_OPTIONS = {
 }
 SAMPLE_CLAIMED_DATE = date(2026, 11, 18)
 FONT_REGULAR = base64.b64encode(
-    (Path(__file__).parent / "assets" / "fonts" / "PlusJakartaSans-Regular.ttf").read_bytes()
+    (ASSETS / "fonts" / "PlusJakartaSans-Regular.ttf").read_bytes()
 ).decode("ascii")
 FONT_BOLD = base64.b64encode(
-    (Path(__file__).parent / "assets" / "fonts" / "PlusJakartaSans-Bold.ttf").read_bytes()
+    (ASSETS / "fonts" / "PlusJakartaSans-Bold.ttf").read_bytes()
 ).decode("ascii")
 
-JUSTICE_GIF = base64.b64encode(
-    (Path(__file__).parent / "assets" / "justice.gif").read_bytes()
-).decode("ascii")
+JUSTICE_GIF_BYTES = (ASSETS / "justice.gif").read_bytes()
+JUSTICE_GIF = base64.b64encode(JUSTICE_GIF_BYTES).decode("ascii")
 
 
-def _gif_bottom_gap_ratio(path):
+def _gif_bottom_gap_ratio(image):
     """Share of the GIF height that is empty (transparent) below the artwork."""
     try:
-        from PIL import Image, ImageChops, ImageSequence
-        im = Image.open(path)
-        height, lowest = im.height, 0
-        for frame in ImageSequence.Iterator(im):
+        height, lowest = image.height, 0
+        for frame in ImageSequence.Iterator(image):
             rgba = frame.convert("RGBA")
             alpha = rgba.getchannel("A")
             if alpha.getextrema()[0] > 20:   # no transparency: compare with the corner colour
@@ -54,10 +54,9 @@ def _gif_bottom_gap_ratio(path):
         return 0.0
 
 
-JUSTICE_GAP = _gif_bottom_gap_ratio(Path(__file__).parent / "assets" / "justice.gif")
-from PIL import Image as _Img
-_g = _Img.open(Path(__file__).parent / "assets" / "justice.gif")
-JUSTICE_ASPECT = _g.height / _g.width   # GIF may not be square
+with Image.open(io.BytesIO(JUSTICE_GIF_BYTES)) as justice_image:
+    JUSTICE_ASPECT = justice_image.height / justice_image.width
+    JUSTICE_GAP = _gif_bottom_gap_ratio(justice_image)
 
 
 def render_styles():
@@ -290,7 +289,6 @@ def flag_location(flag):
 # plays on loop at 70% opacity. Lottie player + animation JSON are both loaded
 # from ./assets and inlined, so nothing is fetched from the internet.
 # ---------------------------------------------------------------------------
-ASSETS = Path(__file__).parent / "assets"
 LOTTIE_JS = (ASSETS / "lottie_light.min.js").read_text(encoding="utf-8").replace("</script", "<\\/script")
 GIRL_JSON = (ASSETS / "search_empty_girl.json").read_text(encoding="utf-8").replace("</script", "<\\/script")
 
@@ -402,7 +400,7 @@ analysis_bytes = None
 analysis_filename = None
 analysis_claimed_date = claimed
 if try_sample:
-    sample_path = Path(__file__).parent / "assets" / "samples" / SAMPLE_OPTIONS[sample_choice]
+    sample_path = ASSETS / "samples" / SAMPLE_OPTIONS[sample_choice]
     if not sample_path.is_file():
         st.error(f"Synthetic sample is missing: {sample_path.name}")
         st.stop()
