@@ -161,8 +161,16 @@ def _ela_analysis(img):
     cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     h, w = mask.shape
     boxes = sorted((cv2.boundingRect(c) for c in cnts if cv2.contourArea(c) > 0.002 * h * w), key=lambda b: -b[2] * b[3])[:3]
-    flags = [_flag("UI consistency", "Compression level differs in this region (ELA is noisy on screenshots)",
-                   "LOW", "Inspect this region visually", region=tuple(int(v) for v in b)) for b in boxes]
+    regions = [tuple(int(v) for v in box) for box in boxes]
+    flags = []
+    if regions:
+        flags.append(_flag(
+            "UI consistency",
+            f"Compression differs in {len(regions)} region(s). ELA is noisy on screenshots.",
+            "LOW",
+            "Inspect the highlighted regions visually",
+            regions=regions,
+        ))
     return flags, float(np.count_nonzero(mask) / mask.size)
 
 
@@ -247,25 +255,34 @@ def _font(size):
 
 def annotate(img, flags):
     base = img.convert("RGBA")
-    scale = max(base.size) / 800
-    lw = max(4, round(4 * scale))
-    fs = max(14, round(16 * scale))
+    scale = max(1.0, max(base.size) / 1000)
+    lw = max(2, round(2 * scale))
+    fs = max(12, round(14 * scale))
     font = _font(fs)
     layer = Image.new("RGBA", base.size, (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
-    for f in sorted(flags, key=lambda f: RANK[f["level"]]):  # HIGH sabse upar
-        if not f["region"]:
-            continue
-        x, y, w, h = f["region"]
-        rgb = ImageColor.getrgb(BOX[f["level"]])
-        d.rectangle([x, y, x + w, y + h], fill=rgb + (45,), outline=rgb + (255,), width=lw)
-        label = f"{f['level']} - {f['check']}"
-        l, t, r, b = d.textbbox((0, 0), label, font=font)
-        tw, th, pad = r - l, b - t, max(3, fs // 4)
-        ly = y - th - 2 * pad - lw
-        if ly < 0:  # upar jagah nahi hai to box ke neeche
-            ly = min(y + h + lw, max(0, base.height - th - 2 * pad))
-        lx = min(max(0, x), max(0, base.width - tw - 2 * pad))
-        d.rectangle([lx, ly, lx + tw + 2 * pad, ly + th + 2 * pad], fill=rgb + (255,))
-        d.text((lx + pad - l, ly + pad - t), label, font=font, fill=(255, 255, 255, 255))
+    for f in sorted(flags, key=lambda f: RANK[f["level"]]):
+        regions = f.get("regions") or ([f["region"]] if f.get("region") else [])
+        for index, region in enumerate(regions, start=1):
+            x, y, w, h = region
+            x2, y2 = x + w, y + h
+            rgb = ImageColor.getrgb(BOX[f["level"]])
+            d.rectangle([x, y, x2, y2], outline=rgb + (255,), width=lw)
+            label = f["level"]
+            if len(regions) > 1:
+                label += f" {index}/{len(regions)}"
+            l, t, r, b = d.textbbox((0, 0), label, font=font)
+            tw, th = r - l, b - t
+            pad = max(4, fs // 3)
+            badge_w, badge_h = tw + 2 * pad, th + 2 * pad
+            lx = min(max(0, x), max(0, base.width - badge_w))
+            ly = y - badge_h - lw
+            if ly < 0:
+                ly = min(y2 + lw, max(0, base.height - badge_h))
+            d.rounded_rectangle(
+                [lx, ly, lx + badge_w, ly + badge_h],
+                radius=max(3, pad // 2),
+                fill=rgb + (255,),
+            )
+            d.text((lx + pad - l, ly + pad - t), label, font=font, fill=(255, 255, 255, 255))
     return Image.alpha_composite(base, layer).convert("RGB")

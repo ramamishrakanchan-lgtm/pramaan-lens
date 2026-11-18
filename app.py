@@ -21,6 +21,12 @@ SAMPLE_OPTIONS = {
     "Editing-metadata example": "metadata_tag.png",
 }
 SAMPLE_CLAIMED_DATE = date(2026, 11, 18)
+FONT_REGULAR = base64.b64encode(
+    (Path(__file__).parent / "assets" / "fonts" / "PlusJakartaSans-Regular.ttf").read_bytes()
+).decode("ascii")
+FONT_BOLD = base64.b64encode(
+    (Path(__file__).parent / "assets" / "fonts" / "PlusJakartaSans-Bold.ttf").read_bytes()
+).decode("ascii")
 
 JUSTICE_GIF = base64.b64encode(
     (Path(__file__).parent / "assets" / "justice.gif").read_bytes()
@@ -55,6 +61,10 @@ JUSTICE_ASPECT = _g.height / _g.width   # GIF may not be square
 
 
 def render_styles():
+    st.markdown(f"""<style>
+    @font-face {{ font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 400; src: url(data:font/ttf;base64,{FONT_REGULAR}) format("truetype"); }}
+    @font-face {{ font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 700; src: url(data:font/ttf;base64,{FONT_BOLD}) format("truetype"); }}
+    </style>""", unsafe_allow_html=True)
     st.markdown("""<style>
     :root {
       --google-bg: #F8F9FA;
@@ -152,6 +162,78 @@ def render_styles():
       [data-testid="stDownloadButton"] { justify-content: flex-start; }
     }
     </style>""", unsafe_allow_html=True)
+    st.markdown("""<style>
+    :root {
+      --google-bg: #F7F8FA;
+      --google-muted: #4B5563;
+      --google-border: #D7DDE5;
+      --google-shadow: 0 1px 3px rgba(32, 33, 36, .06);
+      --google-shadow-hover: 0 3px 8px rgba(32, 33, 36, .1);
+    }
+    html, body, [class*="css"], button, input, textarea, select {
+      font-family: "Plus Jakarta Sans", sans-serif !important;
+      font-weight: 400;
+    }
+    h1, h2, h3, [data-testid="stSubheader"], .brand-title, .flag-title {
+      font-weight: 700 !important;
+    }
+    [data-testid="stMainBlockContainer"], .block-container {
+      max-width: 1080px;
+      padding-top: 1.5rem;
+    }
+    .step-card, .metric-card, .flag-card, .case-card {
+      border-radius: 16px;
+      box-shadow: none;
+    }
+    .metric-card, .flag-card, .case-card { padding: 20px 24px; }
+    .metric-card:hover, .flag-card:hover { transform: none; box-shadow: none; }
+    .flag-card { margin: 12px 0; }
+    .severity-badge { min-width: 52px; text-align: center; }
+    .flag-meta span { box-shadow: none; }
+    .stButton > button, [data-testid="stDownloadButton"] > button {
+      min-height: 48px;
+      border-radius: 12px;
+    }
+    [data-testid="stDownloadButton"] { justify-content: flex-start; }
+    [data-testid="stDownloadButton"] > button {
+      min-width: 0;
+      background: #FFFFFF;
+      color: #174EA6 !important;
+      border-color: #9AAFCB;
+      box-shadow: none;
+    }
+    [data-testid="stDownloadButton"] > button:hover {
+      background: #F1F5FB;
+      color: #174EA6 !important;
+      box-shadow: none;
+    }
+    [data-testid="stImage"] img {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+    [data-testid="stTabs"] button { font-weight: 700; }
+    [data-testid="stExpander"] { border-color: var(--google-border); }
+    @media (max-width: 640px) {
+      .block-container { padding: 1rem 1rem 2rem; }
+      .metric-card, .flag-card, .case-card { padding: 16px; }
+      .local-badge { white-space: normal; }
+    }
+    </style>""", unsafe_allow_html=True)
+
+
+def flag_location(flag):
+    regions = flag.get("regions") or []
+    if len(regions) > 1:
+        return f"{len(regions)} highlighted image regions"
+    if regions:
+        return f"image region {regions[0]}"
+    if flag.get("region"):
+        return f"image region {flag['region']}"
+    return f"metadata field {flag.get('field') or 'not specified'}"
 
 
 
@@ -167,7 +249,8 @@ GIRL_JSON = (ASSETS / "search_empty_girl.json").read_text(encoding="utf-8").repl
 EMPTY_STATE_HTML = r"""
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:transparent;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
+@font-face{font-family:"Plus Jakarta Sans";font-weight:400;src:url(data:font/ttf;base64,__PLUS_JAKARTA_FONT__)}
+html,body{margin:0;height:100%;background:transparent;font-family:"Plus Jakarta Sans",sans-serif;overflow:hidden}
 .card{position:relative;height:100%;overflow:visible;background:transparent}
 .stage{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding:0 12px}
 .content-row{display:flex;align-items:center;justify-content:center;gap:clamp(12px,2.5vw,30px);width:100%;max-width:1450px}
@@ -218,7 +301,9 @@ const inv = document.querySelector(".investigating");
 anim.addEventListener("enterFrame", e => { inv.style.opacity = Math.min(1, e.currentTime / 30); });
 if (reduce) { anim.goToAndStop(90, true); inv.style.opacity = 1; }   // still frame for reduced-motion users
 </script>
-""".replace("__LOTTIE_JS__", LOTTIE_JS).replace("__GIRL_JSON__", GIRL_JSON)
+""".replace("__LOTTIE_JS__", LOTTIE_JS).replace("__GIRL_JSON__", GIRL_JSON).replace(
+    "__PLUS_JAKARTA_FONT__", FONT_REGULAR
+)
 
 
 
@@ -312,56 +397,49 @@ for column, level in zip(metric_columns, ("HIGH", "MEDIUM", "LOW")):
     with column:
         st.markdown(f'<div class="metric-card metric-{level.lower()}"><div class="metric-label">{level} FLAGS</div><div class="metric-value">{counts[level]}</div></div>', unsafe_allow_html=True)
 
-with st.container(border=True):
-    st.subheader("ML assist (experimental)")
-    try:
-        ml_result = predict_risk(res["features"])
-    except ImportError as error:
-        st.warning(f"ML assist is unavailable because a dependency is missing: {error}")
+st.subheader("ML assist (experimental)")
+try:
+    ml_result = predict_risk(res["features"])
+except ImportError as error:
+    st.warning(f"ML assist is unavailable because a dependency is missing: {error}")
+else:
+    if ml_result is None:
+        st.info("No model.joblib found. Run `python train_model.py` to train the optional synthetic-data model.")
     else:
-        if ml_result is None:
-            st.info("No model.joblib found. Run `python train_model.py` to train the optional synthetic-data model.")
-        else:
-            ml_columns = st.columns(2)
-            ml_columns[0].metric("Experimental risk label", ml_result["label"])
-            ml_columns[1].metric("Model class probability", f'{ml_result["confidence"]:.0%}')
-            st.caption(
-                "Synthetic-data pattern only; this experimental output does not change, replace, or suppress "
-                "the rule-based risk flags."
-            )
+        ml_columns = st.columns(2)
+        ml_columns[0].metric("Experimental risk label", ml_result["label"])
+        ml_columns[1].metric("Model class probability", f'{ml_result["confidence"]:.0%}')
+        st.caption(
+            "Synthetic-data pattern only; it does not change the rule-based flags."
+        )
 
-flags_tab, evidence_tab, details_tab = st.tabs(["Flags", "Evidence", "Hash & Case details"])
-with flags_tab:
-    st.subheader("Risk flags")
-    if not res["flags"]:
-        st.success("No rule fired. This is not proof of authenticity: confirm on the original device.")
-    for flag in res["flags"]:
-        level = flag["level"]
-        link = f"region {flag['region']}" if flag["region"] else f"field {flag['field']}"
-        badge_background, badge_text = {
-            "HIGH": ("#FCE9E7", "#9D2823"),
-            "MEDIUM": ("#FFF2D6", "#805400"),
-            "LOW": ("#E7F3EB", "#28613C"),
-        }[level]
-        st.markdown(
-            f'<article class="flag-card" style="--severity:{COLORS[level]};--badge-bg:{badge_background};--badge-text:{badge_text}">'
-            f'<div class="flag-heading"><span class="severity-badge">{html.escape(level)}</span>'
-            f'<span class="flag-title">{html.escape(flag["check"])}</span></div>'
-            f'<p class="flag-description">{html.escape(flag["observation"])}</p>'
-            f'<div class="flag-meta"><span>Action: {html.escape(flag["action"])}</span>'
-            f'<span>Linked to: {html.escape(str(link))}</span></div></article>',
-            unsafe_allow_html=True)
+st.subheader("Risk flags")
+if not res["flags"]:
+    st.success("No rule fired. This is not proof of authenticity: confirm on the original device.")
+for flag in res["flags"]:
+    level = flag["level"]
+    badge_background, badge_text = {
+        "HIGH": ("#FCE9E7", "#9D2823"),
+        "MEDIUM": ("#FFF2D6", "#805400"),
+        "LOW": ("#E7F3EB", "#28613C"),
+    }[level]
+    st.markdown(
+        f'<article class="flag-card" style="--severity:{COLORS[level]};--badge-bg:{badge_background};--badge-text:{badge_text}">'
+        f'<div class="flag-heading"><span class="severity-badge">{html.escape(level)}</span>'
+        f'<span class="flag-title">{html.escape(flag["check"])}</span></div>'
+        f'<p class="flag-description">{html.escape(flag["observation"])}</p>'
+        f'<div class="flag-meta"><span>Next step: {html.escape(flag["action"])}</span>'
+        f'<span>Linked to: {html.escape(flag_location(flag))}</span></div></article>',
+        unsafe_allow_html=True)
 
-with evidence_tab:
-    st.subheader("Annotated evidence")
-    st.image(annotate(res["image"], res["flags"]), use_container_width=True)
-    st.caption("Flagged regions are highlighted where coordinates are available.")
-    with st.expander("View original screenshot"):
-        st.image(res["image"], use_container_width=True)
+st.subheader("Annotated screenshot")
+st.image(annotate(res["image"], res["flags"]), use_container_width=True)
+st.caption("Outlined regions use severity labels; the original screenshot is unchanged.")
+with st.expander("View original screenshot"):
+    st.image(res["image"], use_container_width=True)
 
 trail = custody.trail(res["case_id"])
-with details_tab:
-    st.subheader("Case seal")
+with st.expander("Case integrity details"):
     st.markdown(
         f'<div class="case-card"><div class="case-label">Case ID</div><div class="case-value">{html.escape(res["case_id"])}</div>'
         f'<div class="case-label" style="margin-top:.8rem">SHA-256</div><div class="case-value">{html.escape(res["sha256"])}</div></div>',
@@ -381,7 +459,7 @@ pdf_flags = [
         "observation": flag["observation"],
         "severity": flag["level"],
         "action": flag["action"],
-        "linked_to": f"region {flag['region']}" if flag["region"] else f"field {flag['field']}",
+        "linked_to": flag_location(flag),
     }
     for flag in res["flags"]
 ]
