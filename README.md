@@ -42,7 +42,7 @@ In the sidebar, upload a PNG, JPEG, or WebP screenshot and select **Seal and ana
 To regenerate the synthetic training set, evaluate a model on a held-out split, and save `model.joblib`:
 
 ```bash
-python train_model.py
+python -m backend.train_model
 ```
 
 The script also regenerates the synthetic sample images in `assets/samples/`. Its printed precision and recall describe only a held-out split of generated data.

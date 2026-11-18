@@ -6,7 +6,7 @@ Pure reportlab. Built-in fonts only. No network calls, so the
 
 Usage (from your Streamlit app):
 
-    from report_pdf import build_report_pdf
+    from backend.report_pdf import build_report_pdf
 
     build_report_pdf(
         "report.pdf",
@@ -513,7 +513,7 @@ def build_report_pdf(out_path, *, file_name, case_id, sha256, flags, custody_log
     return out_path
 
 # --------------------------------------------------------------------------
-# Demo: python report_pdf.py  ->  sample_report.pdf
+# Demo: python -m backend.report_pdf  ->  sample_report.pdf
 # --------------------------------------------------------------------------
 if __name__ == "__main__":
     sha = "d4b96e34196455a265f6353a77d622315c01853396a21cda17d15a238fd03a63"

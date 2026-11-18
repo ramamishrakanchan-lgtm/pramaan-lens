@@ -5,7 +5,12 @@ from pathlib import Path
 
 from PIL import Image
 
-from train_model import SAMPLE_SCENARIOS, generate_sample_screenshots, render_synthetic_screenshot, train_model
+from backend.train_model import (
+    SAMPLE_SCENARIOS,
+    generate_sample_screenshots,
+    render_synthetic_screenshot,
+    train_model,
+)
 
 
 class SyntheticTrainingTests(unittest.TestCase):

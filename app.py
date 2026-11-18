@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 from backend import custody
 from backend.analysis import COLORS, analyze, annotate
 from backend.ml_model import predict_risk
-from report_pdf import build_report_pdf
+from backend.report_pdf import build_report_pdf
 
 st.set_page_config(page_title="Pramaan Lens", page_icon="🔎", layout="wide")
 

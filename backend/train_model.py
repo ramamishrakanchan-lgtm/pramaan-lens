@@ -19,7 +19,7 @@ from sklearn.preprocessing import StandardScaler
 from backend import custody
 from backend.analysis import FEATURE_NAMES, analyze
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_SAMPLES_DIR = ROOT / "assets" / "samples"
 DEFAULT_MODEL_PATH = ROOT / "model.joblib"
 CLAIMED_DATE = date(2026, 11, 18)
@@ -132,6 +132,7 @@ def train_model(examples_per_scenario=20, model_path=DEFAULT_MODEL_PATH, samples
 
 
 def main():
+    """Run synthetic-only training and evaluation from the command line."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--examples-per-scenario", type=int, default=20)
     parser.add_argument("--samples-dir", type=Path, default=DEFAULT_SAMPLES_DIR)
