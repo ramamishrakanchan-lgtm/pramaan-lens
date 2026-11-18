@@ -23,6 +23,21 @@ No generative LLM is used in the evidence path. The original conversation on the
 
 Python, Streamlit, Pillow, Tesseract OCR, OpenCV, imagehash, SQLite, scikit-learn, joblib, and ReportLab. Plus Jakarta Sans is bundled locally under its SIL Open Font License.
 
+## Layout
+
+| Path | Purpose |
+| --- | --- |
+| `app.py` | Streamlit interface and local analysis flow |
+| `backend/analysis.py` | Rule-based screenshot checks and numeric features |
+| `backend/custody.py` | SHA-256 sealing and SQLite custody log |
+| `backend/ml_model.py` | Optional experimental classifier |
+| `backend/report_pdf.py` | PDF report generation |
+| `backend/train_model.py` | Synthetic-data generation and model training |
+| `assets/` | Local styles, empty-state animation, fonts, and synthetic samples |
+| `models/model.joblib` | Bundled synthetic-data model; optional at runtime |
+| `docs/` | Sample report and screenshots placeholder |
+| `tests/` | Unit tests for analysis, model, and synthetic training |
+
 ## Target Users
 
 Investigators, legal-support teams, journalists, and educators who need a first-pass way to organize screenshot verification. PramaanLens is a triage aid, not a forensic certification tool.
@@ -37,7 +52,7 @@ python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
-In the sidebar, upload a PNG, JPEG, or WebP screenshot and select **Seal and analyse**. Or choose one of the bundled synthetic examples and select **Try sample screenshot**. All processing is local; the SQLite custody database is stored under `data/`.
+In the sidebar, upload a PNG, JPEG, or WebP screenshot and select **Seal and analyse**. Or choose one of the bundled synthetic examples and select **Try sample**. All processing is local; the SQLite custody database is stored under `data/`.
 
 To regenerate the synthetic training set, evaluate a model on a held-out split, and save `models/model.joblib`:
 
@@ -46,6 +61,14 @@ python -m backend.train_model
 ```
 
 The script also regenerates the synthetic sample images in `assets/samples/`. Its printed precision and recall describe only a held-out split of generated data.
+
+To regenerate the bundled PDF example:
+
+```bash
+python -m backend.report_pdf
+```
+
+The report is written to `docs/sample_report.pdf`.
 
 ## Limitations
 
