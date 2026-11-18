@@ -164,6 +164,11 @@ button, .severity-badge, .step-label, .metric-label,
   font-weight: 400 !important;
   letter-spacing: 0;
 }
+[data-testid="stIconMaterial"] {
+  font-family: "Material Symbols Rounded" !important;
+  font-feature-settings: "liga" !important;
+  font-weight: 400 !important;
+}
 [data-testid="stFileUploader"] section {
   background: #FFFFFF;
   border: 1px dashed #C8CDD3;
