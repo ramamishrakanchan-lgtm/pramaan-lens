@@ -10,6 +10,22 @@ RANK = {"HIGH": 3, "MEDIUM": 2, "LOW": 1}
 COLORS = {"HIGH": "#B3342F", "MEDIUM": "#C98A1B", "LOW": "#4F7A64"}
 DATE_RE = re.compile(r"(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})")
 REL_RE = re.compile(r"today|yesterday")
+CHECK_FEATURES = {
+    "metadata_flag_count": "Metadata",
+    "ocr_flag_count": "OCR",
+    "message_order_flag_count": "Message order",
+    "date_logic_flag_count": "Date logic",
+    "ui_consistency_flag_count": "UI consistency",
+    "reuse_detection_flag_count": "Reuse detection",
+}
+FEATURE_NAMES = (
+    *CHECK_FEATURES,
+    "ocr_confidence",
+    "edited_region_score",
+    "date_anomaly_count",
+    "order_anomaly_count",
+    "hash_distance",
+)
 
 
 def _flag(check, obs, level, action, region=None, field=None):
@@ -56,8 +72,17 @@ def capture_time(info):
 def ocr_words(img):
     import pytesseract
     d = pytesseract.image_to_data(img.convert("RGB"), output_type=pytesseract.Output.DICT)
-    return [dict(t=d["text"][i].strip(), box=(d["left"][i], d["top"][i], d["width"][i], d["height"][i]))
-            for i in range(len(d["text"])) if d["text"][i].strip()]
+    words = []
+    for i, text in enumerate(d["text"]):
+        text = text.strip()
+        if text:
+            try:
+                confidence = float(d["conf"][i])
+            except (KeyError, TypeError, ValueError):
+                confidence = 0.0
+            words.append(dict(t=text, box=(d["left"][i], d["top"][i], d["width"][i], d["height"][i]),
+                              confidence=max(0.0, min(100.0, confidence))))
+    return words
 
 
 def _times(words):
@@ -121,7 +146,7 @@ def date_flags(words, capture, claimed):
 
 
 # 4. UI / edited-region check (error-level analysis, low confidence by design)
-def ela_flags(img):
+def _ela_analysis(img):
     rgb = img.convert("RGB")
     buf = io.BytesIO()
     rgb.save(buf, "JPEG", quality=90)
@@ -133,15 +158,44 @@ def ela_flags(img):
     cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     h, w = mask.shape
     boxes = sorted((cv2.boundingRect(c) for c in cnts if cv2.contourArea(c) > 0.002 * h * w), key=lambda b: -b[2] * b[3])[:3]
-    return [_flag("UI consistency", "Compression level differs in this region (ELA is noisy on screenshots)",
-                  "LOW", "Inspect this region visually", region=tuple(int(v) for v in b)) for b in boxes]
+    flags = [_flag("UI consistency", "Compression level differs in this region (ELA is noisy on screenshots)",
+                   "LOW", "Inspect this region visually", region=tuple(int(v) for v in b)) for b in boxes]
+    return flags, float(np.count_nonzero(mask) / mask.size)
+
+
+def ela_flags(img):
+    return _ela_analysis(img)[0]
 
 
 # 5. Reuse detection --------------------------------------------------------
+def _reuse_analysis(ph, case_id):
+    distances = [(cid, ph - imagehash.hex_to_hash(hx)) for cid, hx in custody.previous(case_id)]
+    nearest_distance = min((distance for _, distance in distances), default=64)
+    flags = [_flag("Reuse detection", f"Perceptually similar to earlier case {cid} (distance {distance})",
+                   "HIGH", "Compare with the earlier case file", field=f"phash:{cid}")
+             for cid, distance in distances if distance <= 6]
+    return flags, nearest_distance
+
+
 def reuse_flags(ph, case_id):
-    return [_flag("Reuse detection", f"Perceptually similar to earlier case {cid} (distance {ph - imagehash.hex_to_hash(hx)})",
-                  "HIGH", "Compare with the earlier case file", field=f"phash:{cid}")
-            for cid, hx in custody.previous(case_id) if ph - imagehash.hex_to_hash(hx) <= 6]
+    return _reuse_analysis(ph, case_id)[0]
+
+
+def numeric_features(flags, words, edited_region_score, hash_distance):
+    counts = {
+        feature: sum(flag["check"] == check for flag in flags)
+        for feature, check in CHECK_FEATURES.items()
+    }
+    confidence_values = [float(word.get("confidence", 0.0)) for word in words]
+    ocr_confidence = (sum(confidence_values) / len(confidence_values)) if confidence_values else 0.0
+    counts.update({
+        "ocr_confidence": ocr_confidence,
+        "edited_region_score": float(edited_region_score),
+        "date_anomaly_count": counts["date_logic_flag_count"],
+        "order_anomaly_count": counts["message_order_flag_count"],
+        "hash_distance": float(hash_distance),
+    })
+    return counts
 
 
 # Pipeline ----------------------------------------------------------------
@@ -157,14 +211,18 @@ def analyze(raw: bytes, filename: str, claimed=None):
         words = ocr_words(img)
     except Exception as e:  # Tesseract missing or failed: say so, never guess
         flags.append(_flag("OCR", f"OCR unavailable ({type(e).__name__}); text checks skipped", "LOW", "Install Tesseract and re-run", field="OCR"))
-    flags += order_flags(words) + date_flags(words, capture_time(info), claimed) + ela_flags(img)
+    flags += order_flags(words) + date_flags(words, capture_time(info), claimed)
+    edited_flags, edited_region_score = _ela_analysis(img)
+    flags += edited_flags
     ph = imagehash.phash(img)
-    flags += reuse_flags(ph, case_id)
+    reuse, hash_distance = _reuse_analysis(ph, case_id)
+    flags += reuse
+    features = numeric_features(flags, words, edited_region_score, hash_distance)
     custody.register(case_id, digest, str(ph), filename)
     custody.log(case_id, "ANALYSED", f"{len(flags)} flags, ocr_words={len(words)}")
     flags.sort(key=lambda f: -RANK[f["level"]])
     return dict(case_id=case_id, sha256=digest, filename=filename, flags=flags, metadata=info, image=img,
-                top=flags[0]["level"] if flags else "LOW")
+                top=flags[0]["level"] if flags else "LOW", features=features)
 
 
 # 6. Annotated image (clear boxes + labels) -----------------------------------

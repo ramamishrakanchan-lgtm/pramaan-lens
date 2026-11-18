@@ -5,3 +5,5 @@ pytesseract
 imagehash
 reportlab
 numpy
+scikit-learn
+joblib
