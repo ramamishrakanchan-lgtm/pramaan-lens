@@ -74,6 +74,7 @@ def render_synthetic_screenshot(scenario, seed):
 
 
 def generate_sample_screenshots(samples_dir=DEFAULT_SAMPLES_DIR):
+    """Generate the deterministic synthetic screenshots used by the UI."""
     samples_dir = Path(samples_dir)
     samples_dir.mkdir(parents=True, exist_ok=True)
     for index, scenario in enumerate(SAMPLE_SCENARIOS):
@@ -83,6 +84,7 @@ def generate_sample_screenshots(samples_dir=DEFAULT_SAMPLES_DIR):
 
 
 def build_synthetic_dataset(examples_per_scenario=20):
+    """Analyze synthetic scenarios and return numeric rows with synthetic labels."""
     if examples_per_scenario < 4:
         raise ValueError("Use at least four examples per scenario for a held-out split.")
 
@@ -105,6 +107,7 @@ def build_synthetic_dataset(examples_per_scenario=20):
 
 
 def train_model(examples_per_scenario=20, model_path=DEFAULT_MODEL_PATH, samples_dir=DEFAULT_SAMPLES_DIR):
+    """Train and evaluate the classifier using only generated synthetic examples."""
     generate_sample_screenshots(samples_dir)
     rows, labels = build_synthetic_dataset(examples_per_scenario)
     x_train, x_test, y_train, y_test = train_test_split(

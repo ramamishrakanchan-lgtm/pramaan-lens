@@ -1,8 +1,13 @@
 """Rule-based, offline analysis. Every flag points to an image region or a metadata field.
 No generative LLM, and no genuine/fake verdict: only HIGH / MEDIUM / LOW risk flags."""
-import io, re, datetime as dt
-import cv2, numpy as np, imagehash
-from PIL import Image, ImageDraw, ImageFont, ImageColor, ExifTags
+import datetime as dt
+import io
+import re
+
+import cv2
+import imagehash
+import numpy as np
+from PIL import ExifTags, Image, ImageColor, ImageDraw, ImageFont
 from . import custody
 
 EDITORS = ("photoshop", "gimp", "canva", "snapseed", "picsart", "pixlr", "lightroom", "paint.net", "figma", "fotor")
@@ -42,6 +47,7 @@ def _hhmm(m):
 
 # 1. Metadata -----------------------------------------------------------
 def metadata(img):
+    """Return image metadata and metadata-related risk flags."""
     info, flags = {}, []
     ex = img.getexif()
     for k, v in ex.items():
@@ -64,6 +70,7 @@ def metadata(img):
 
 
 def capture_time(info):
+    """Parse an EXIF capture timestamp when one is available."""
     for k in ("DateTimeOriginal", "DateTime"):
         try:
             return dt.datetime.strptime(info[k][:19], "%Y:%m:%d %H:%M:%S")
@@ -74,6 +81,7 @@ def capture_time(info):
 
 # 2. OCR ----------------------------------------------------------------
 def ocr_words(img):
+    """Extract recognized words, bounding boxes, and confidence values."""
     import pytesseract
     d = pytesseract.image_to_data(img.convert("RGB"), output_type=pytesseract.Output.DICT)
     words = []
@@ -110,6 +118,7 @@ def _union(a, b):
 
 # 3. Message order + date logic -------------------------------------------
 def order_flags(words):
+    """Flag decreasing message times within a visible date segment."""
     seps = [w["box"][1] for w in words if REL_RE.fullmatch(w["t"].strip(",:").lower()) or DATE_RE.fullmatch(w["t"])]
     segs = {}
     for w, m in sorted(_times(words), key=lambda x: x[0]["box"][1]):
@@ -125,6 +134,7 @@ def order_flags(words):
 
 
 def date_flags(words, capture, claimed):
+    """Compare visible dates with the claimed date and available capture time."""
     flags = []
     for w in words:
         word = w["t"].strip(",:").lower()
@@ -177,6 +187,7 @@ def _ela_analysis(img):
 
 
 def ela_flags(img):
+    """Return low-confidence compression-difference flags for an image."""
     return _ela_analysis(img)[0]
 
 
@@ -191,10 +202,12 @@ def _reuse_analysis(ph, case_id):
 
 
 def reuse_flags(ph, case_id):
+    """Return flags for perceptually similar previously registered cases."""
     return _reuse_analysis(ph, case_id)[0]
 
 
 def numeric_features(flags, words, edited_region_score, hash_distance):
+    """Build the stable numeric feature mapping consumed by the ML assist."""
     counts = {
         feature: sum(flag["check"] == check for flag in flags)
         for feature, check in CHECK_FEATURES.items()
@@ -217,6 +230,7 @@ def numeric_features(flags, words, edited_region_score, hash_distance):
 
 # Pipeline ----------------------------------------------------------------
 def analyze(raw: bytes, filename: str, claimed=None):
+    """Run offline checks, record custody events, and return findings and features."""
     digest = custody.sha256(raw)
     case_id = digest[:12]
     custody.log(case_id, "UPLOAD_SEALED", f"{filename} sha256={digest}")
@@ -256,6 +270,7 @@ def _font(size):
 
 
 def annotate(img, flags, marker_scale=1.0):
+    """Draw non-destructive severity outlines and labels on a copy of the image."""
     base = img.convert("RGBA")
     if not 0.5 <= marker_scale <= 3.0:
         raise ValueError("marker_scale must be between 0.5 and 3.0")

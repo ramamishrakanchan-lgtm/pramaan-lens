@@ -410,7 +410,8 @@ def _part_b():
 # --------------------------------------------------------------------------
 def build_report_pdf(out_path, *, file_name, case_id, sha256, flags, custody_log,
                      generated_at=None):
-    """
+    """Build a screening report PDF from file, flag, and custody details.
+
     flags:       list of dicts with keys check, observation, severity (LOW/MEDIUM/HIGH),
                  action, linked_to. Optional key "meaning" overrides the plain-language text.
     custody_log: list of (timestamp, event_code, detail) tuples.
