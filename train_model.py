@@ -30,6 +30,7 @@ SCENARIOS = {
     "date_mismatch": "HIGH",
     "prior_match": "HIGH",
 }
+SAMPLE_SCENARIOS = ("clean", "order_anomaly", "metadata_tag", "date_mismatch")
 
 
 def render_synthetic_screenshot(scenario, seed):
@@ -47,7 +48,7 @@ def render_synthetic_screenshot(scenario, seed):
     draw.ellipse((26, 20, 76, 70), fill="#D9E8E1")
     draw.text((96, 25), f"Sample Chat {seed % 17 + 1}", font=font, fill="white")
     draw.text((96, 56), "SYNTHETIC DEMO - NOT A REAL CONVERSATION", font=small_font, fill="#DDF1E8")
-    shown_date = "17/11/2026" if scenario == "date_mismatch" else "18/11/2026"
+    shown_date = "19/11/2026" if scenario == "date_mismatch" else "18/11/2026"
     draw.rounded_rectangle((350, 112, 610, 150), radius=16, fill="#DDE7E2")
     draw.text((400, 122), shown_date, font=small_font, fill="#35443C")
 
@@ -75,7 +76,7 @@ def render_synthetic_screenshot(scenario, seed):
 def generate_sample_screenshots(samples_dir=DEFAULT_SAMPLES_DIR):
     samples_dir = Path(samples_dir)
     samples_dir.mkdir(parents=True, exist_ok=True)
-    for index, scenario in enumerate(SCENARIOS):
+    for index, scenario in enumerate(SAMPLE_SCENARIOS):
         image_path = samples_dir / f"{scenario}.png"
         image_path.write_bytes(render_synthetic_screenshot(scenario, seed=100 + index))
     return samples_dir

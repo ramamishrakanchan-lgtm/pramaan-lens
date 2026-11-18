@@ -5,7 +5,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from train_model import SCENARIOS, generate_sample_screenshots, render_synthetic_screenshot, train_model
+from train_model import SAMPLE_SCENARIOS, generate_sample_screenshots, render_synthetic_screenshot, train_model
 
 
 class SyntheticTrainingTests(unittest.TestCase):
@@ -21,7 +21,7 @@ class SyntheticTrainingTests(unittest.TestCase):
 
             self.assertEqual(
                 {path.stem for path in samples_dir.glob("*.png")},
-                set(SCENARIOS),
+                set(SAMPLE_SCENARIOS),
             )
 
     def test_training_saves_a_model_from_a_synthetic_split(self):

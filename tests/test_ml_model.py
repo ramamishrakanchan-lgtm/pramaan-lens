@@ -12,10 +12,10 @@ from backend.ml_model import feature_vector, predict_risk
 class AnalysisFeatureTests(unittest.TestCase):
     def test_numeric_features_include_requested_signals(self):
         flags = [
-            {"check": "Metadata"},
-            {"check": "Message order"},
-            {"check": "Date logic"},
-            {"check": "Date logic"},
+            {"check": "Metadata", "level": "LOW"},
+            {"check": "Message order", "level": "MEDIUM"},
+            {"check": "Date logic", "level": "HIGH"},
+            {"check": "Date logic", "level": "HIGH"},
         ]
         words = [{"confidence": 80.0}, {"confidence": 60.0}]
 
@@ -26,6 +26,9 @@ class AnalysisFeatureTests(unittest.TestCase):
         self.assertEqual(features["date_logic_flag_count"], 2)
         self.assertEqual(features["date_anomaly_count"], 2)
         self.assertEqual(features["order_anomaly_count"], 1)
+        self.assertEqual(features["high_flag_count"], 2)
+        self.assertEqual(features["medium_flag_count"], 1)
+        self.assertEqual(features["low_flag_count"], 1)
         self.assertEqual(features["ocr_confidence"], 70.0)
         self.assertEqual(features["edited_region_score"], 0.125)
         self.assertEqual(features["hash_distance"], 9.0)

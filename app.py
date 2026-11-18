@@ -2,15 +2,25 @@
 import base64
 import html
 import io
+from datetime import date
 from pathlib import Path
 
 import streamlit as st
 import streamlit.components.v1 as components
 from backend import custody
 from backend.analysis import COLORS, analyze, annotate
+from backend.ml_model import predict_risk
 from report_pdf import build_report_pdf
 
 st.set_page_config(page_title="Pramaan Lens", page_icon="🔎", layout="wide")
+
+SAMPLE_OPTIONS = {
+    "Clean synthetic example": "clean.png",
+    "Message-order example": "order_anomaly.png",
+    "Date-mismatch example": "date_mismatch.png",
+    "Editing-metadata example": "metadata_tag.png",
+}
+SAMPLE_CLAIMED_DATE = date(2026, 11, 18)
 
 JUSTICE_GIF = base64.b64encode(
     (Path(__file__).parent / "assets" / "justice.gif").read_bytes()
@@ -243,18 +253,46 @@ st.markdown(f"""<style>
 with st.sidebar:
     st.header("Case input")
     claimed = st.date_input("Claimed chat date (optional)", value=None, format="DD/MM/YYYY")
+    sample_choice = st.selectbox("Synthetic sample", tuple(SAMPLE_OPTIONS))
+    try_sample = st.button("Try sample screenshot", use_container_width=True)
+    st.caption("Samples are generated examples. Their claimed date is fixed to 18/11/2026.")
     up = st.file_uploader("Chat screenshot", type=["png", "jpg", "jpeg", "webp"])
     run = st.button("Seal and analyse", type="primary", disabled=up is None, use_container_width=True)
 
-if run and up:
+analysis_bytes = None
+analysis_filename = None
+analysis_claimed_date = claimed
+if try_sample:
+    sample_path = Path(__file__).parent / "assets" / "samples" / SAMPLE_OPTIONS[sample_choice]
+    if not sample_path.is_file():
+        st.error(f"Synthetic sample is missing: {sample_path.name}")
+        st.stop()
+    analysis_bytes = sample_path.read_bytes()
+    analysis_filename = f"synthetic_{sample_path.name}"
+    analysis_claimed_date = SAMPLE_CLAIMED_DATE
+elif run and up:
+    analysis_bytes = up.getvalue()
+    analysis_filename = up.name
+
+if analysis_bytes is not None and analysis_filename is not None:
     progress_panel = st.empty()
     with progress_panel.container():
         with st.spinner("Hashing, reading text, checking consistency..."):
             show_animated_inspector()
-            result = analyze(up.getvalue(), up.name, claimed)
+            result = analyze(analysis_bytes, analysis_filename, analysis_claimed_date)
     progress_panel.empty()
     st.session_state.res = result
     st.session_state.analysis_complete = True
+
+with st.expander("Responsible AI and limitations"):
+    st.markdown(
+        "- PramaanLens reports risk flags and verification steps; it never decides whether an image is genuine or fake.\n"
+        "- OCR, metadata, compression, and perceptual-hash checks can be incomplete or produce false alarms. "
+        "Check the original conversation on its source device.\n"
+        "- The optional ML assist is experimental, trained only on generated synthetic examples, and its displayed "
+        "class probability is not calibrated for real evidence.\n"
+        "- The tool is not legal advice. Its BSA 2023 s.63 Part A content is a draft for review, not a legal certification."
+    )
 
 res = st.session_state.get("res")
 if not res:
@@ -273,6 +311,24 @@ metric_columns = st.columns(3)
 for column, level in zip(metric_columns, ("HIGH", "MEDIUM", "LOW")):
     with column:
         st.markdown(f'<div class="metric-card metric-{level.lower()}"><div class="metric-label">{level} FLAGS</div><div class="metric-value">{counts[level]}</div></div>', unsafe_allow_html=True)
+
+with st.container(border=True):
+    st.subheader("ML assist (experimental)")
+    try:
+        ml_result = predict_risk(res["features"])
+    except ImportError as error:
+        st.warning(f"ML assist is unavailable because a dependency is missing: {error}")
+    else:
+        if ml_result is None:
+            st.info("No model.joblib found. Run `python train_model.py` to train the optional synthetic-data model.")
+        else:
+            ml_columns = st.columns(2)
+            ml_columns[0].metric("Experimental risk label", ml_result["label"])
+            ml_columns[1].metric("Model class probability", f'{ml_result["confidence"]:.0%}')
+            st.caption(
+                "Synthetic-data pattern only; this experimental output does not change, replace, or suppress "
+                "the rule-based risk flags."
+            )
 
 flags_tab, evidence_tab, details_tab = st.tabs(["Flags", "Evidence", "Hash & Case details"])
 with flags_tab:

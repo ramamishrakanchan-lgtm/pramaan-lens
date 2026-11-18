@@ -20,6 +20,9 @@ CHECK_FEATURES = {
 }
 FEATURE_NAMES = (
     *CHECK_FEATURES,
+    "high_flag_count",
+    "medium_flag_count",
+    "low_flag_count",
     "ocr_confidence",
     "edited_region_score",
     "date_anomaly_count",
@@ -186,6 +189,10 @@ def numeric_features(flags, words, edited_region_score, hash_distance):
         feature: sum(flag["check"] == check for flag in flags)
         for feature, check in CHECK_FEATURES.items()
     }
+    counts.update({
+        f"{level.lower()}_flag_count": sum(flag["level"] == level for flag in flags)
+        for level in RANK
+    })
     confidence_values = [float(word.get("confidence", 0.0)) for word in words]
     ocr_confidence = (sum(confidence_values) / len(confidence_values)) if confidence_values else 0.0
     counts.update({
