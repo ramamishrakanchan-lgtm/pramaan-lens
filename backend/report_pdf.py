@@ -23,6 +23,7 @@ Internal values such as "ocr_words" are never printed in the report.
 """
 import re
 from datetime import datetime
+from pathlib import Path
 from xml.sax.saxutils import escape
 
 from reportlab.lib import colors
@@ -513,9 +514,10 @@ def build_report_pdf(out_path, *, file_name, case_id, sha256, flags, custody_log
     return out_path
 
 # --------------------------------------------------------------------------
-# Demo: python -m backend.report_pdf  ->  sample_report.pdf
+# Demo: python -m backend.report_pdf  ->  docs/sample_report.pdf
 # --------------------------------------------------------------------------
 if __name__ == "__main__":
+    sample_report_path = Path(__file__).resolve().parent.parent / "docs" / "sample_report.pdf"
     sha = "d4b96e34196455a265f6353a77d622315c01853396a21cda17d15a238fd03a63"
     name = "IMG-20260525-WA0078.jpg"
     log = [
@@ -529,6 +531,6 @@ if __name__ == "__main__":
         "action": "Request the original file if available.",
         "linked_to": "EXIF",
     }]
-    build_report_pdf("sample_report.pdf", file_name=name, case_id=sha[:12], sha256=sha,
+    build_report_pdf(str(sample_report_path), file_name=name, case_id=sha[:12], sha256=sha,
                      flags=demo_flags, custody_log=log, generated_at=log[-1][0])
-    print("Wrote sample_report.pdf")
+    print(f"Wrote {sample_report_path}")
