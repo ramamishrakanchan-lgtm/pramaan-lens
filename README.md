@@ -21,7 +21,7 @@ No generative LLM is used in the evidence path. The original conversation on the
 
 ## Technologies
 
-Python, Streamlit, Pillow, Tesseract OCR, OpenCV, imagehash, SQLite, scikit-learn, joblib, and ReportLab.
+Python, Streamlit, Pillow, Tesseract OCR, OpenCV, imagehash, SQLite, scikit-learn, joblib, and ReportLab. Plus Jakarta Sans is bundled locally under its SIL Open Font License.
 
 ## Target Users
 

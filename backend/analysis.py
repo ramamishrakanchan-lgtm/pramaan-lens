@@ -31,8 +31,9 @@ FEATURE_NAMES = (
 )
 
 
-def _flag(check, obs, level, action, region=None, field=None):
-    return dict(check=check, observation=obs, level=level, action=action, region=region, field=field)
+def _flag(check, obs, level, action, region=None, field=None, regions=None):
+    return dict(check=check, observation=obs, level=level, action=action, region=region, field=field,
+                regions=regions or [])
 
 
 def _hhmm(m):
@@ -164,9 +165,10 @@ def _ela_analysis(img):
     regions = [tuple(int(v) for v in box) for box in boxes]
     flags = []
     if regions:
+        region_word = "region" if len(regions) == 1 else "regions"
         flags.append(_flag(
             "UI consistency",
-            f"Compression differs in {len(regions)} region(s). ELA is noisy on screenshots.",
+            f"Compression differs in {len(regions)} {region_word}. ELA is noisy on screenshots.",
             "LOW",
             "Inspect the highlighted regions visually",
             regions=regions,
@@ -253,21 +255,35 @@ def _font(size):
     return ImageFont.load_default()
 
 
-def annotate(img, flags):
+def annotate(img, flags, marker_scale=1.0):
     base = img.convert("RGBA")
-    scale = max(1.0, max(base.size) / 1000)
+    if not 0.5 <= marker_scale <= 3.0:
+        raise ValueError("marker_scale must be between 0.5 and 3.0")
+    scale = max(1.0, max(base.size) / 1000) * marker_scale
     lw = max(2, round(2 * scale))
     fs = max(12, round(14 * scale))
     font = _font(fs)
     layer = Image.new("RGBA", base.size, (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
-    for f in sorted(flags, key=lambda f: RANK[f["level"]]):
+    ordered_flags = sorted(flags, key=lambda f: RANK[f["level"]])
+    all_regions = [
+        (x, y, x + w, y + h)
+        for flag in ordered_flags
+        for x, y, w, h in (flag.get("regions") or ([flag["region"]] if flag.get("region") else []))
+    ]
+    label_rects = []
+    for f in ordered_flags:
         regions = f.get("regions") or ([f["region"]] if f.get("region") else [])
         for index, region in enumerate(regions, start=1):
             x, y, w, h = region
             x2, y2 = x + w, y + h
             rgb = ImageColor.getrgb(BOX[f["level"]])
             d.rectangle([x, y, x2, y2], outline=rgb + (255,), width=lw)
+            badge_background, badge_text = {
+                "HIGH": ("#FCE9E7", "#9D2823"),
+                "MEDIUM": ("#FFF2D6", "#805400"),
+                "LOW": ("#E7F3EB", "#28613C"),
+            }[f["level"]]
             label = f["level"]
             if len(regions) > 1:
                 label += f" {index}/{len(regions)}"
@@ -275,14 +291,36 @@ def annotate(img, flags):
             tw, th = r - l, b - t
             pad = max(4, fs // 3)
             badge_w, badge_h = tw + 2 * pad, th + 2 * pad
-            lx = min(max(0, x), max(0, base.width - badge_w))
-            ly = y - badge_h - lw
-            if ly < 0:
-                ly = min(y2 + lw, max(0, base.height - badge_h))
+            candidates = (
+                (x, y - badge_h - lw),
+                (x, y2 + lw),
+                (x2 + lw, y),
+                (x - badge_w - lw, y),
+            )
+            position = None
+            for candidate_x, candidate_y in candidates:
+                candidate_rect = (candidate_x, candidate_y, candidate_x + badge_w, candidate_y + badge_h)
+                inside_image = (
+                    candidate_x >= 0 and candidate_y >= 0
+                    and candidate_rect[2] <= base.width and candidate_rect[3] <= base.height
+                )
+                overlaps = any(
+                    candidate_rect[0] < other[2] and candidate_rect[2] > other[0]
+                    and candidate_rect[1] < other[3] and candidate_rect[3] > other[1]
+                    for other in all_regions + label_rects
+                )
+                if inside_image and not overlaps:
+                    position = (candidate_x, candidate_y, candidate_rect)
+                    break
+            if position:
+                lx, ly, label_rect = position
+            else:
+                continue
+            label_rects.append(label_rect)
             d.rounded_rectangle(
                 [lx, ly, lx + badge_w, ly + badge_h],
                 radius=max(3, pad // 2),
-                fill=rgb + (255,),
+                fill=ImageColor.getrgb(badge_background) + (255,),
             )
-            d.text((lx + pad - l, ly + pad - t), label, font=font, fill=(255, 255, 255, 255))
+            d.text((lx + pad - l, ly + pad - t), label, font=font, fill=ImageColor.getrgb(badge_text) + (255,))
     return Image.alpha_composite(base, layer).convert("RGB")

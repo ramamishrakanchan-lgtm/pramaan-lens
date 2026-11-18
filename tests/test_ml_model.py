@@ -5,7 +5,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from backend.analysis import FEATURE_NAMES, numeric_features
+from PIL import Image
+
+from backend.analysis import FEATURE_NAMES, _ela_analysis, annotate, numeric_features
 from backend.ml_model import feature_vector, predict_risk
 
 
@@ -38,6 +40,44 @@ class AnalysisFeatureTests(unittest.TestCase):
         features = {name: index for index, name in enumerate(FEATURE_NAMES)}
 
         self.assertEqual(feature_vector(features), list(range(len(FEATURE_NAMES))))
+
+    def test_annotate_keeps_region_interiors_visible(self):
+        source = Image.new("RGB", (120, 80), "white")
+        flags = [{
+            "level": "LOW",
+            "region": None,
+            "regions": [(20, 25, 30, 30), (70, 25, 30, 30)],
+        }]
+
+        marked = annotate(source, flags)
+
+        self.assertEqual(marked.size, source.size)
+        self.assertEqual(marked.getpixel((30, 40)), (255, 255, 255))
+        self.assertEqual(marked.getpixel((20, 40)), (16, 185, 129))
+
+    def test_marker_size_only_changes_the_annotation_weight(self):
+        source = Image.new("RGB", (120, 80), "white")
+        flags = [{"level": "LOW", "region": (20, 25, 30, 30), "regions": []}]
+
+        standard = annotate(source, flags)
+        larger = annotate(source, flags, marker_scale=3)
+
+        self.assertEqual(standard.getpixel((23, 40)), (255, 255, 255))
+        self.assertEqual(larger.getpixel((23, 40)), (16, 185, 129))
+        self.assertEqual(source.getpixel((23, 40)), (255, 255, 255))
+
+    def test_ela_regions_are_one_grouped_flag(self):
+        image = Image.new("RGB", (100, 100), "white")
+        with (
+            patch("backend.analysis.cv2.findContours", return_value=([1, 2], None)),
+            patch("backend.analysis.cv2.contourArea", return_value=100),
+            patch("backend.analysis.cv2.boundingRect", side_effect=[(10, 10, 20, 20), (50, 50, 20, 20)]),
+        ):
+            flags, _ = _ela_analysis(image)
+
+        self.assertEqual(len(flags), 1)
+        self.assertEqual(flags[0]["regions"], [(10, 10, 20, 20), (50, 50, 20, 20)])
+        self.assertIn("2 regions", flags[0]["observation"])
 
 
 class OptionalModelTests(unittest.TestCase):
