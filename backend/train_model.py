@@ -21,7 +21,7 @@ from backend.analysis import FEATURE_NAMES, analyze
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_SAMPLES_DIR = ROOT / "assets" / "samples"
-DEFAULT_MODEL_PATH = ROOT / "model.joblib"
+DEFAULT_MODEL_PATH = ROOT / "models" / "model.joblib"
 CLAIMED_DATE = date(2026, 11, 18)
 SCENARIOS = {
     "clean": "LOW",

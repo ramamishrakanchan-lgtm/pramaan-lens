@@ -86,6 +86,19 @@ class OptionalModelTests(unittest.TestCase):
             missing_path = Path(directory) / "missing.joblib"
             self.assertIsNone(predict_risk({}, missing_path))
 
+    def test_unreadable_model_returns_no_prediction(self):
+        with tempfile.TemporaryDirectory() as directory:
+            model_path = Path(directory) / "broken.joblib"
+            model_path.touch()
+
+            def fail_to_load(_path):
+                raise ValueError("invalid model")
+
+            fake_joblib = SimpleNamespace(load=fail_to_load)
+            with patch.dict(sys.modules, {"joblib": fake_joblib}):
+                with self.assertLogs("backend.ml_model", level="WARNING"):
+                    self.assertIsNone(predict_risk({}, model_path))
+
     def test_prediction_returns_class_and_probability(self):
         class FakeModel:
             classes_ = ["HIGH", "LOW"]

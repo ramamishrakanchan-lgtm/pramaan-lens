@@ -1,9 +1,11 @@
 """Optional experimental risk classifier trained only on synthetic screenshots."""
+import logging
 from pathlib import Path
 
 from .analysis import FEATURE_NAMES
 
-MODEL_PATH = Path(__file__).resolve().parent.parent / "model.joblib"
+MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "model.joblib"
+logger = logging.getLogger(__name__)
 
 
 def feature_vector(features):
@@ -19,7 +21,11 @@ def predict_risk(features, model_path=MODEL_PATH):
 
     import joblib
 
-    model = joblib.load(model_path)
+    try:
+        model = joblib.load(model_path)
+    except Exception as error:
+        logger.warning("Optional ML model could not be loaded from %s: %s", model_path, error)
+        return None
     probabilities = model.predict_proba([feature_vector(features)])[0]
     class_index = max(range(len(probabilities)), key=probabilities.__getitem__)
     label = str(model.classes_[class_index])

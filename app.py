@@ -450,7 +450,10 @@ except ImportError as error:
     st.warning(f"ML assist is unavailable because a dependency is missing: {error}")
 else:
     if ml_result is None:
-        st.info("No model.joblib found. Run `python train_model.py` to train the optional synthetic-data model.")
+        st.info(
+            "The optional model is missing or could not be loaded. Run "
+            "`python -m backend.train_model` to create or repair `models/model.joblib`."
+        )
     else:
         ml_columns = st.columns(2)
         ml_columns[0].metric("Experimental risk label", ml_result["label"])
